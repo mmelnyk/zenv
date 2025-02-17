@@ -1,0 +1,11 @@
+function zenv_source_file() {
+    [ -f "$ZENVDIR/$1" ] && source "$ZENVDIR/$1"
+}
+
+function zenv_load_plugin() {
+    zenv_source_file "plugins/$1/plugin.zsh"
+}
+
+function zenv_load_completion() {
+    [ -f "$ZENVDIR/completions/$1" ] && compinit "$1"
+}
