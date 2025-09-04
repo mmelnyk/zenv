@@ -6,12 +6,13 @@
 # unmark FOO: delete a mark
 # marks: lists all marks
 #
-export MARKPATH=$HOME/.marks
+export MARKPATH=${MARKPATH:-$HOME/.marks}
 
 
 jump() {
-	local markpath="$(readlink $MARKPATH/$1)" || {echo "No such mark: $1"; return 1}
-	builtin cd "$markpath" 2>/dev/null || {echo "Destination does not exist for mark [$1]: $markpath"; return 2}
+	local markpath
+	markpath="$(readlink "$MARKPATH/$1" 2>/dev/null)" || { echo "No such mark: $1"; return 1 }
+	builtin cd "$markpath" 2>/dev/null || { echo "Destination does not exist for mark [$1]: $markpath"; return 2 }
 }
 
 mark() {
@@ -40,7 +41,7 @@ marks() {
 	local printf_markname_template="$(printf -- "%%%us" "$max")"
 	for link in $MARKPATH/{,.}*(@N); do
 		local markname="$fg[cyan]$(printf -- "$printf_markname_template" "${link:t}")$reset_color"
-		local markpath="$fg[blue]$(readlink $link)$reset_color"
+		local markpath="$fg[blue]$(readlink "$link")$reset_color"
 		printf -- "%s -> %s\n" "$markname" "$markpath"
 	done
 }
@@ -54,7 +55,7 @@ compctl -K _completemarks unmark
 _mark_expansion() {
 	setopt localoptions extendedglob
 	autoload -U modify-current-argument
-	modify-current-argument '$(readlink "$MARKPATH/$ARG" || echo "$ARG")'
+	modify-current-argument '$(readlink "$MARKPATH/$ARG" 2>/dev/null || echo "$ARG")'
 }
 zle -N _mark_expansion
 bindkey "^g" _mark_expansion

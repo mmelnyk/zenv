@@ -5,11 +5,10 @@
 _ssh_configfile="$HOME/.ssh/config"
 if [[ -f "$_ssh_configfile" ]]; then
   _ssh_hosts=($(
-    egrep '^Host.*' "$_ssh_configfile" |\
-    awk '{for (i=2; i<=NF; i++) print $i}' |\
-    sort |\
-    uniq |\
-    grep -v '^*' |\
+    grep -E '^[[:space:]]*Host[[:space:]]+' "$_ssh_configfile" | \
+    awk '{for (i=2; i<=NF; i++) print $i}' | \
+    sort -u | \
+    grep -v '^\*' | \
     sed -e 's/\.*\*$//'
   ))
   zstyle ':completion:*:hosts' hosts $_ssh_hosts
@@ -24,7 +23,7 @@ function ssh_rmhkey {
   local ssh_configfile="$HOME/.ssh/config"
   local ssh_host="$1"
   if [[ -z "$ssh_host" ]]; then return; fi
-  ssh-keygen -R $(grep -A10 "$ssh_host" "$ssh_configfile" | grep -i HostName | head -n 1 | awk '{print $2}')
+  ssh-keygen -R "$(grep -A10 -- "$ssh_host" "$ssh_configfile" | grep -i "^[[:space:]]*HostName[[:space:]]\+" | head -n 1 | awk '{print $2}')"
 }
 compctl -k hosts ssh_rmhkey
 
@@ -35,7 +34,7 @@ function ssh_load_key() {
   if [[ -z "$key" ]]; then return; fi
   local keyfile="$HOME/.ssh/$key"
   local keysig=$(ssh-keygen -l -f "$keyfile")
-  if ( ! ssh-add -l | grep -q "$keysig" ); then
+  if ( ! ssh-add -l | grep -Fq "$keysig" ); then
     ssh-add "$keyfile"
   fi
 }
@@ -47,7 +46,7 @@ function ssh_unload_key {
   if [[ -z "$key" ]]; then return; fi
   local keyfile="$HOME/.ssh/$key"
   local keysig=$(ssh-keygen -l -f "$keyfile")
-  if ( ssh-add -l | grep -q "$keysig" ); then
+  if ( ssh-add -l | grep -Fq "$keysig" ); then
     ssh-add -d "$keyfile"
   fi
 }
